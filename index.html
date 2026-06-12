@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسابقة من أنا</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --accent-color: #f1c40f;
+            --bg-color: #2c3e50;
+            --text-color: white;
+            --panel-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        h1 { text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin: 5px 0 15px 0; }
+
+        .main-container {
+            display: flex;
+            flex-direction: row; 
+            align-items: flex-start;
+            gap: 20px;
+            width: 100%;
+            max-width: 1350px;
+            justify-content: center;
+        }
+
+        /* القسم الأيمن: النقاط وزر التالي */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 200px;
+            margin-top: 55px;
+            order: 1; /* يضمن بقاءه أول عنصر من اليمين في اتجاه rtl */
+        }
+
+        .scoreboard {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        .team { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .team:last-child { border-bottom: none; }
+        .team h2 { margin: 0 0 5px 0; font-size: 1.1rem; }
+        .score { font-size: 2.5rem; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+
+        /* منطقة اللعبة في المنتصف */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            order: 2; /* يضمن بقاءه في المنتصف */
+        }
+
+        #charNameDisplay {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            height: 2.5rem;
+            visibility: hidden;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .stage {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            border: 8px solid white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #charImg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            position: absolute;
+            z-index: 1;
+        }
+
+        #tilesGrid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            z-index: 2;
+        }
+
+        .tile {
+            background-color: #000;
+            border: 1px solid #222;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .tile.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        /* القسم الأيسر: شاشة البث الحية وعرض الـ QR للنظام عند تفعيله */
+        .buzzin-panel {
+            display: none; 
+            flex-direction: column;
+            gap: 12px;
+            width: 320px;
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+            margin-top: 55px;
+            order: 3; /* يضمن ظهوره في أقصى اليسار بعد منطقة اللعبة */
+        }
+
+        .buzzin-panel h3 { margin: 0 0 5px 0; color: var(--accent-color); font-size: 1.1rem; }
+
+        #buzzinDisplayFrame {
+            width: 100%;
+            height: 240px;
+            border: none;
+            border-radius: 10px;
+            background: #111;
+        }
+
+        .qr-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,0.95);
+            padding: 10px;
+            border-radius: 10px;
+            color: #333;
+            margin-top: 5px;
+        }
+        .qr-zone span { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
+        #qrCodeImg { width: 110px; height: 110px; margin-bottom: 5px; }
+        
+        .room-display {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #2c3e50;
+            color: var(--accent-color);
+            padding: 3px 15px;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        button:hover { transform: scale(1.05); }
+
+        .btn-score { background-color: var(--accent-color); color: #333; margin: 2px; padding: 3px 12px; font-size: 0.85rem;}
+        .btn-reveal { background-color: var(--primary-color); color: white; }
+        .btn-name { background-color: #9b59b6; color: white; }
+        .btn-all { background-color: #e74c3c; color: white; }
+        
+        .btn-next { 
+            background-color: #2ecc71; 
+            color: white; 
+            font-size: 1.1rem; 
+            width: 100%; 
+            padding: 12px;
+        }
+
+        /* زر وقائمة الإعدادات الجانبية */
+        .settings-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #34495e;
+            color: white;
+            font-size: 1.3rem;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 70px;
+            left: -320px;
+            width: 280px;
+            background: #2c3e50;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: left 0.3s ease;
+            z-index: 99;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .settings-panel.open { left: 15px; }
+        .settings-panel h3 { margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; color: var(--accent-color); }
+        .setting-group { margin-bottom: 15px; }
+        .setting-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: bold;}
+        
+        select, input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            background: #34495e;
+            color: white;
+            box-sizing: border-box;
+            margin-bottom: 5px;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2ecc71; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        .team-names-list {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .team-name-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .team-name-input-wrapper span { font-size: 0.85rem; min-width: 45px; }
+
+        .btn-panel {
+            background: #7f8c8d;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            border-radius: 5px;
+        }
+
+        #fileInput { display: none; }
+        .btn-upload { background-color: var(--primary-color); width: 100%; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+    <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
+
+    <div class="settings-panel" id="settingsPanel">
+        <h3>إعدادات المسابقة</h3>
+        
+        <div class="setting-group">
+            <div class="switch-container">
+                <label style="margin:0;">تفعيل نظام الأزرار:</label>
+                <label class="switch">
+                    <input type="checkbox" id="buzzerToggle" onchange="toggleBuzzerSystem(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="setting-group" id="roomInputGroup" style="background: rgba(241, 196, 15, 0.1); padding: 10px; border-radius: 8px; display: none;">
+            <label style="color:var(--accent-color);">رمز الغرفة:</label>
+            <input type="text" id="buzzinRoomInput" placeholder="اكتب رمز الغرفة" onchange="setupBuzzinBuzzer(this.value)">
+            <small style="font-size:0.75rem; color:#bdc3c7;">اكتب رقم الغرفة هنا وسيظهر اسم من يضغط تلقائياً في شاشة اللعبة.</small>
+        </div>
+
+        <div class="setting-group">
+            <label>حجم شبكة المربعات (المستوى):</label>
+            <select id="gridSizeSelect" onchange="changeGridSize(this.value)">
+                <option value="3">سهل (3 × 3)</option>
+                <option value="4" selected>متوسط (4 × 4)</option>
+                <option value="5">صعب (5 × 5)</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <label>إدارة الفرق وتسميتها:</label>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-panel" style="background:#2ecc71; flex:1;" onclick="addTeam()">إضافة</button>
+                <button class="btn-panel" style="background:#c0392b; flex:1;" onclick="removeTeam()">حذف</button>
+            </div>
+            <div class="team-names-list" id="teamNamesInputsContainer"></div>
+        </div>
+
+        <div class="setting-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            <label>تجربة صورة خارجية:</label>
+            <input type="file" id="fileInput" accept="image/*" onchange="previewExternalFile()">
+            <button class="btn-upload" onclick="document.getElementById('fileInput').click()">رفع وتجربة صورة</button>
+        </div>
+    </div>
+
+    <h1>خمن الشخصية</h1>
+
+    <div class="main-container">
+        
+        <div class="side-panel">
+            <div class="scoreboard" id="scoreboardContainer">
+                </div>
+            <button class="btn-next" onclick="nextCharacter()">الشخصية التالية </button>
+        </div>
+
+        <div class="game-area">
+            <div id="charNameDisplay">الاسم يظهر هنا</div>
+
+            <div class="stage">
+                <img src="" id="charImg">
+                <div id="tilesGrid"></div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-reveal" onclick="revealPiece()">كشف قطعة </button>
+                <button class="btn-name" onclick="showName()">كشف الاسم </button>
+                <button class="btn-all" onclick="revealAll()">كشف الكل ️</button>
+            </div>
+        </div>
+
+        <div class="buzzin-panel" id="buzzinPanelVisual">
+            <h3>الضاغط الأول الآن:</h3>
+            <iframe src="about:blank" id="buzzinDisplayFrame"></iframe>
+            
+            <div class="qr-zone" id="qrZone" style="display: none;">
+                <span>امسح للدخول:</span>
+                <img src="" id="qrCodeImg" alt="QR Code">
+                <div class="room-display" id="roomCodeDisplay">000000</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let GRID_SIZE = 4; 
+        
+        const characters = [
+             "سلطان_بن_سلمان.jpg", "سلفادور_دالي.jpg", "سمير_غانم.jpg", "صدام_حسين.jpg", 
+            "صهيب_قدس.jpg", "طلال_سام.jpg", "عادل_الجبير.jpg", "عبدالباسط_عبدالصمد.jpg", 
+            "عبدالحليم_حافظ.jpg", "عبدالرحمن_السديس.jpg", "عبدالرحمن_السعدي.jpg", 
+            "عبدالعزيز_بن_باز.jpg", "عبدالله_السويلم.jpg", "عبدالله_المطيري.jpg", 
+            "علي_المدفع.jpg", "عمر_المختار.jpg", "فايز_المالكي.jpg", "فلاديمير_بوتين.jpg", 
+            "كريستيانو_رونالدو.jpg", "ليوناردو_دي_كابريو.jpg", "ماجد_الشبل.jpg", 
+            "ماجد_عبدالله.jpg", "محمد_الزهراني.jpg", "محمد_علي_كلاي.jpg", "محمد_كنو.jpg", 
+            "محمد_هنيدي.jpg", "معمر_القذافي.jpg", "ناصر_القصبي.jpg", "نيكولا_تسلا.jpg", 
+            "نيل_أرمسترونغ.jpg", "نيلسون_مانديلا.jpg", "هاني_مقبل.jpg", "ويل_سميث.jpg", 
+            "ياسر_الدوسري.jpg", "ياسر_العظمة.jpg", "يوسف_حناوي.jpg", "أحمد_الشقيري.jpg", 
+            "أحمد_القحطاني.jpg", "أحمد_زويل.jpg", "أحمد_شوقي.jpg", "أحمد_ياسين.jpg", 
+            "أدولف_هتلر.jpg", "ألبرت_أينشتاين.jpg", "ألكسندر_غراهام_بيل.jpg", 
+            "إيمانويل_ماكرون.jpg", "بابلو_بيكاسو.jpg", "بدر_صالح.jpg", "بروس_لي.jpg", 
+            "بندر_مدخلي.jpg", "بيليه.jpg", "تشارلي_تشابلن.jpg", "ثنيان_خالد.jpg", 
+            "جاكي_شان.jpg", "جوزيف_ستالين.jpg", "حامد_الضبعان.jpg", "داوود_الشريان.jpg", 
+            "راشد_الشمراني.jpg", "سالم_الدوسري.jpg", "سامي_الجابر.jpg", "ستيف_جوبز.jpg", 
+            "ستيف_هارفي.jpg", "سعيد_العويران.jpg", "نايف_حمدان.jpg", "فيصل_آل_سعود.jpg",
+		    "فهد_آل_سعود.jpg", "عبدالله_آل_سعود.jpg", "مهاتير_محمد.jpg","محمد_العثيمين.jpg",
+			"محمد_الألباني.jpg","غسان_كنفاني.jpg","قابوس_البوسعيدي.jpg","نجيب_محفوظ.jpg",
+			"أحمد_حلمي.jpg","عبدالله_السدحان.jpg","يوسف_الجراح.jpg","الوليد_بن_طلال.jpg",
+			"تشارلز_الثالث.jpg","أحمد_الدوسري.jpg","هيثم_خالد.jpg","زلاتان_إبراهيموفيتش.jpg",
+			"براء_بكري.jpg","محمد_الشهري.jpg","بينيتو_موسوليني.jpg","شاروخان.jpg",
+			"توماس_إديسون.jpg","كاظم_الساهر.jpg","عبدالله_المديفر.jpg","خالد_النفيسي.jpg",
+			"بابلو_إسكوبار.jpg","كيم_جونغ_أون.jpg","ما_دونغ_سوك.jpg","ياسين_بونو.jpg",
+			"يزيد_الراجحي.jpg","سعود_الفيصل.jpg","تشي_جيفارا.jpg","أحمد_الشرع.jpg",
+			"أنور_السادات.jpg","حسني_مبارك.jpg","محمد_الشلهوب.jpg","عبدالرحمن_بن_مساعد.jpg",
+			"عبدالله_السبع.jpg","طارق_الحبيب.jpg","حبيب_الحبيب.jpg","تميم_آل_ثاني.jpg",
+			"رونالدينيو.jpg","فيودر_داستايوفسكي.jpg","طه_حسين.jpg","طارق_العلي.jpg",
+			"عبدالمجيد_عبدالله.jpg","جبران_خليل_جبران.jpg","محمود_درويش.jpg","نزار_قباني.jpg",
+			"مايكل_جوردن.jpg","مايكل_جاكسون.jpg","محمد_البيز.jpg","مارك_زوكربيرغ.jpg",
+			"كريم_بنزيما.jpg","زين_الدين_زيدان.jpg","مارتن_لوثر_كينج.jpg","فيصل_القاسم.jpg",
+			"رياض_محرز.jpg","غازي_القصيبي.jpg","جمال_عبدالناصر.jpg","عثمان_طه.jpg","علي_الطنطاوي.jpg",
+			"فاروق_الأول.jpg","مالكوم_إكس.jpg","والت_ديزني.jpg","براد_بيت.jpg","جوني_ديب.jpg",
+			"سيلفستر_ستالون.jpg","جون_ترافولتا.jpg","جون_سينا.jpg","دوين_جونسون.jpg","فين_ديزل.jpg",
+			"حفيظ_دراجي.jpg","عصام_شوالي.jpg","رؤوف_خليف.jpg","فارس_عوض.jpg","عابد_فهد.jpg",
+			"سعد_الفرج.jpg","غانم_الصالح.jpg","عمر_الشريف.jpg","دريد_لحام.jpg","يوسف_الثنيان.jpg",
+			"حسين_النجار.jpg","بكر_الشدي.jpg","عبدالله_الجاسر.jpg","عمر_الخطيب.jpg","عبدالرحمن_السميط.jpg",
+			"عبدالمجيد_تبون.jpg","فيصل_بن_فرحان.jpg","هاياو_ميازاكي.jpg","هيديو_كوجيما.jpg","جهاد_حطاب.jpg",
+			"سعود_الشريم.jpg","ياسر_القحطاني.jpg","قاسم_الحتو.jpg","هزاع_البلوشي.jpg","بندر_بليلة.jpg",
+			"عبدالله_الربيعة.jpg","عبدالرحمن_العقل.jpg","محمد_المنجد.jpg","راكان_الشايع.jpg","خلف_بن_هذال.jpg",
+			"بدر_بن_عبدالمحسن.jpg","سعد_بن_جدلان.jpg","مصلح_بن_عياد.jpg","خالد_عبدالرحمن.jpg",
+			"عبدالله_النفيسي.jpg","علي_عبدالله_صالح.jpg","صباح_الأحمد.jpg","ميشيل_عون.jpg","توفيق_الربيعة.jpg",
+			"حبيب_نورمحمدوف.jpg","روان_اتكينسون.jpg","أبراهام_لينكولن.jpg","أحمد_زكي_يماني.jpg",
+			"آل_باتشينو.jpg","حسن_البلام.jpg","فهد_الحيان.jpg","جورج_قرداحي.jpg","وليد_الفراج.jpg",
+			"صالح_العريض.jpg","كيليان_مبابي.jpg","لامين_يمال.jpg","أشرف_حكيمي.jpg","روبرت_ليفاندوفسكي.jpg",
+			"إرلنج_هالاند.jpg","فان_غوخ.jpg","عبدالرزاق_البدر.jpg","حميدان_التركي.jpg","محمد_صديق_المنشاوي.jpg",
+			"عبدالسلام_الشويعر.jpg","فيدل_كاسترو.jpg","روبرت_دي_نيرو.jpg","مايك_تايسون.jpg","توباك_شاكور.jpg",
+			"محمد_العويس.jpg","رجب_طيب_إردوغان.jpg","بوب_روس.jpg","حمود_الخضر.jpg","محمد_أبوتريكة.jpg",
+			"ماهر_المعيقلي.jpg","جوردن_رامزي.jpg","خالد_الفيصل.jpg","محمود_الحصري.jpg","محمد_أيوب.jpg",
+			"عبدالعزيز_الصميلي.jpg","كلود_مونيه.jpg"
+        ];
+
+        if(characters.length > 0) {
+            characters.sort(() => Math.random() - 0.5);
+        }
+
+        let currentImgIndex = 0;
+        let visibleTiles = [];
+        let isTestMode = false;
+        let testImageSrc = "";
+        let testImageName = "";
+        
+        let teamsData = [
+            { name: "الفريق الأول", score: 0 },
+            { name: "الفريق الثاني", score: 0 }
+        ]; 
+
+        const gridElement = document.getElementById('tilesGrid');
+        const imgElement = document.getElementById('charImg');
+        const nameDisplay = document.getElementById('charNameDisplay');
+
+        function toggleSettings() {
+            document.getElementById('settingsPanel').classList.toggle('open');
+        }
+
+        function toggleBuzzerSystem(isEnabled) {
+            const inputGroup = document.getElementById('roomInputGroup');
+            const sidePanelVisual = document.getElementById('buzzinPanelVisual');
+            const displayFrame = document.getElementById('buzzinDisplayFrame');
+            const roomCodeInput = document.getElementById('buzzinRoomInput').value.trim();
+            
+            if (isEnabled) {
+                inputGroup.style.display = "block";
+                sidePanelVisual.style.display = "flex";
+                
+                if (displayFrame.src === "about:blank" || displayFrame.src === "") {
+                    displayFrame.src = "https://www.multibuzz.app";
+                }
+                
+                if (roomCodeInput) {
+                    setupBuzzinBuzzer(roomCodeInput);
+                }
+            } else {
+                inputGroup.style.display = "none";
+                sidePanelVisual.style.display = "none";
+                displayFrame.src = "about:blank";
+            }
+        }
+
+        function setupBuzzinBuzzer(roomCode) {
+            const qrZone = document.getElementById('qrZone');
+            const qrImg = document.getElementById('qrCodeImg');
+            const roomDisplay = document.getElementById('roomCodeDisplay');
+
+            roomCode = roomCode.trim();
+
+            if (!roomCode) {
+                qrZone.style.display = "none";
+                return;
+            }
+
+            roomDisplay.innerText = roomCode;
+
+            const playerUrl = `https://www.multibuzz.app/${roomCode}`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playerUrl)}`;
+            qrZone.style.display = "flex";
+        }
+
+        function changeGridSize(size) {
+            GRID_SIZE = parseInt(size);
+            refreshCurrentStage();
+        }
+
+        function renderScoreboard() {
+            const scoreboardContainer = document.getElementById('scoreboardContainer');
+            const inputsContainer = document.getElementById('teamNamesInputsContainer');
+            
+            scoreboardContainer.innerHTML = '';
+            inputsContainer.innerHTML = '';
+            
+            teamsData.forEach((team, index) => {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team';
+                teamDiv.innerHTML = `
+                    <h2>${team.name}</h2>
+                    <div class="score" id="score-${index}">${team.score}</div>
+                    <button class="btn-score" onclick="changeTeamScore(${index}, 1)">+1</button>
+                    <button class="btn-score" onclick="changeTeamScore(${index}, -1)">-1</button>
+                `;
+                scoreboardContainer.appendChild(teamDiv);
+
+                const inputWrapper = document.createElement('div');
+                inputWrapper.className = 'team-name-input-wrapper';
+                inputWrapper.innerHTML = `
+                    <span>فريق ${index+1}:</span>
+                    <input type="text" value="${team.name}" oninput="updateTeamName(${index}, this.value)" placeholder="اسم الفريق">
+                `;
+                inputsContainer.appendChild(inputWrapper);
+            });
+        }
+
+        function updateTeamName(index, newName) {
+            teamsData[index].name = newName || `الفريق ${index + 1}`;
+            const teamHeaders = document.querySelectorAll('.team h2');
+            if(teamHeaders[index]) {
+                teamHeaders[index].innerText = teamsData[index].name;
+            }
+        }
+
+        function addTeam() {
+            const nextNum = teamsData.length + 1;
+            teamsData.push({ name: `الفريق ${nextNum}`, score: 0 });
+            renderScoreboard();
+        }
+
+        function removeTeam() {
+            if(teamsData.length > 1) {
+                teamsData.pop();
+                renderScoreboard();
+            }
+        }
+
+        function changeTeamScore(teamIndex, amount) {
+            teamsData[teamIndex].score = Math.max(0, teamsData[teamIndex].score + amount);
+            document.getElementById(`score-${teamIndex}`).innerText = teamsData[teamIndex].score;
+        }
+
+        function previewExternalFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function() {
+                isTestMode = true;
+                testImageSrc = reader.result;
+                testImageName = file.name.split('.')[0].replace(/[_-]/g, ' ');
+                
+                refreshCurrentStage();
+                toggleSettings(); 
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function refreshCurrentStage() {
+            if (isTestMode) {
+                imgElement.src = testImageSrc;
+            } else {
+                if(characters.length > 0) {
+                    imgElement.src = 'images/' + characters[currentImgIndex];
+                } else {
+                    imgElement.src = '';
+                }
+            }
+
+            nameDisplay.style.visibility = 'hidden'; 
+            gridElement.innerHTML = '';
+            visibleTiles = [];
+            
+            gridElement.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+            gridElement.style.gridTemplateRows = `repeat(${GRID_SIZE}, 1fr)`;
+
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.id = `tile-${i}`;
+                gridElement.appendChild(tile);
+                visibleTiles.push(i); 
+            }
+            setTimeout(() => { revealPiece(); }, 500); 
+        }
+
+        function revealPiece() {
+            if (visibleTiles.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * visibleTiles.length);
+            const tileId = visibleTiles.splice(randomIndex, 1)[0];
+            const el = document.getElementById(`tile-${tileId}`);
+            if(el) el.classList.add('hidden');
+        }
+
+        function revealAll() {
+            document.querySelectorAll('.tile').forEach(tile => tile.classList.add('hidden'));
+            visibleTiles = [];
+        }
+
+        function showName() {
+            if (isTestMode) {
+                nameDisplay.innerText = testImageName;
+            } else {
+                if(characters.length > 0) {
+                    let rawName = characters[currentImgIndex];
+                    nameDisplay.innerText = rawName.split('.')[0].replace(/[_-]/g, ' ');
+                } else {
+                    nameDisplay.innerText = "لا توجد صور";
+                }
+            }
+            nameDisplay.style.visibility = 'visible';
+            revealAll(); 
+        }
+
+        function nextCharacter() {
+            isTestMode = false; 
+            if(characters.length > 0) {
+                currentImgIndex = (currentImgIndex + 1) % characters.length;
+            }
+            refreshCurrentStage();
+        }
+
+        renderScoreboard();
+        refreshCurrentStage();
+    </script>
+</body>
+</html>
