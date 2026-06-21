@@ -176,7 +176,22 @@
             margin-top: 5px;
         }
         .qr-zone span { font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; }
+        
+        /* كلاس مخصص لـ QR الإجابات داخل لوحة الإعدادات ليبقى منفصلاً وتصميمه جميل */
+        .answers-qr-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin: 15px auto;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px dashed var(--accent-color);
+        }
+
         #qrCodeImg { width: 110px; height: 110px; margin-bottom: 5px; }
+        #qrCodeImgAnswers { width: 150px; height: 150px; border: 5px solid white; border-radius: 10px; background: white; }
         
         .room-display {
             font-size: 1.1rem;
@@ -381,7 +396,7 @@
             <input type="number" id="roundInput" value="3" min="1" onchange="updateRoundSettings()">
             <label style="color:#2ecc71;">عدد الصور لكل جولة:</label>
             <input type="number" id="imageInput" value="5" min="1" onchange="updateRoundSettings()">
-            <button class="btn-panel" style="background:#2ecc71; width:100%; margin-top:5px;" onclick="resetGameWithRounds()">تطبيق وبدء مسابقة جديدة</button>
+            <button class="btn-panel" style="background:#2ecc71; width:100%; margin-top:5px;" onclick="resetGameWithRounds()">تطبيق</button>
         </div>
 
         <div class="setting-group">
@@ -407,17 +422,17 @@
             <input type="file" id="fileInput" accept="image/*" onchange="previewExternalFile()">
             <button class="btn-upload" onclick="document.getElementById('fileInput').click()">رفع وتجربة صورة</button>
         </div>
-		<div class="qr-zone" id="qrZone" style="display: none; flex-direction: column; align-items: center; margin: 20px auto; text-align: center;">
-    <h3 style="color: #f1c40f; margin-bottom: 10px;">امسح بالجوال لمتابعة الإجابات</h3>
-    <img id="qrCodeImg" src="" alt="QR Code" style="border: 5px solid white; border-radius: 10px; background: white;">
-</div>
+
+        <div class="answers-qr-container" id="answersQrZone">
+            <h4 style="color: #f1c40f; margin: 0 0 10px 0; font-size: 0.95rem;">امسح بالجوال لمتابعة الإجابات</h4>
+            <img id="qrCodeImgAnswers" src="" alt="Answers QR Code">
+        </div>
 
         <div class="leader-box">
-            <label style="color: var(--accent-color); font-weight: bold;">قائمة الإجابات الذكية للقائد</label>
-            <button class="btn-leader-open" onclick="openLeaderPanel()">اضغطي لفتح جدول الإجابات️</button>
-            <small style="font-size:0.75rem; color:#bdc3c7; display:block; margin-top:5px; line-height:1.3;">سيفتح جدولاً تفاعلياً بالترتيب الحالي مع ميزة التشطيب الذكي دون إنترنت.</small>
+            <label style="color: var(--accent-color); font-weight: bold;">قائمة الإجابات للقائد</label>
+            <button class="btn-leader-open" onclick="openLeaderPanel()">فتح قائمة الإجابات</button>
+            <small style="font-size:0.75rem; color:#bdc3c7; display:block; margin-top:5px; line-height:1.3;">سيتم فتح صفحة منفصلة فيها قائمة بترتيب الإجابات الحالية وتوليد QR كود خاص بها.</small>
         </div>
-		
 		
     </div>
 
@@ -455,7 +470,6 @@
                 <span>امسح للدخول:</span>
                 <img src="" id="qrCodeImg" alt="QR Code">
                 <div class="room-display" id="roomCodeDisplay">000000</div>
-			
             </div>
         </div>
 
@@ -480,7 +494,7 @@
             "إيمانويل_ماكرون.jpg", "بابلو_بيكاسو.jpg", "بدر_صالح.jpg", "بروس_لي.jpg", 
             "بندر_مدخلي.jpg", "بيليه.jpg", "تشارلي_تشابلن.jpg", "ثنيان_خالد.jpg", 
             "جاكي_شان.jpg", "جوزيف_ستالين.jpg", "حامد_الضبعان.jpg", "داوود_الشريان.jpg", 
-            "راشد_الشمراني.jpg", "سالم_الدوسري.jpg", "سامي_الجابر.jpg", "ستيف_جوبز.jpg", 
+            "raشد_الشمراني.jpg", "سالم_الدوسري.jpg", "سامي_الجابر.jpg", "ستيف_جوبز.jpg", 
             "ستيف_هارفي.jpg", "سعيد_العويران.jpg", "نايف_حمدان.jpg", "فيصل_آل_سعود.jpg",
 		    "فهد_آل_سعود.jpg", "عبدالله_آل_سعود.jpg", "مهاتير_محمد.jpg","محمد_العثيمين.jpg",
 			"محمد_الألباني.jpg","غسان_كنفاني.jpg","قابوس_البوسعيدي.jpg","نجيب_محفوظ.jpg",
@@ -517,41 +531,37 @@
 			"عبدالعزيز_الصميلي.jpg","كلود_مونيه.jpg"
         ];
 
-        // 1. توليد رمز الجلسة العشوائي من 4 أرقام (مثال: 7241)
         const gameSessionSeed = Math.floor(1000 + Math.random() * 9000);
 
-        // 2. دالة التوليد العشوائي المعتمدة على الرمز لضمان التطابق
         function seededRandom(seed) {
             let x = Math.sin(seed++) * 10000;
             return x - Math.floor(x);
         }
 
-        // 3. ترتيب مصفوفة الأسماء في اللعبة بناءً على رمز الجلسة الحالي
         let initialSeed = gameSessionSeed;
         if(characters.length > 0) {
             characters.sort(() => seededRandom(initialSeed++) - 0.5);
         }
 
         // ==========================================
-        // منظومة الـ QR كود الخفيفة والذكية برمز الجلسة فقط
+        // منظومة الـ QR المنفصلة كلياً والخاصة بالإجابات
         // ==========================================
         function openLeaderPanel() {
-            // رابط صفحتكِ على قيت هب (ضعي رابطكِ الفعلي بدلاً من هذا)
             const githubLeaderboardUrl = `https://shadofh.github.io/answers-list/index.html?session=${gameSessionSeed}`;
 
-            // توليد الـ QR كود بالرابط الصغير جداً (مستحيل يعطي خطأ URI Too Long)
-            const qrImgElement = document.getElementById("qrCodeImg");
-            const qrZoneElement = document.getElementById("qrZone");
+            // استهداف المعرفات الجديدة والفريدة لجدول الإجابات ليبقى الـ Buzzer سليماً
+            const qrImgElement = document.getElementById("qrCodeImgAnswers");
+            const qrZoneElement = document.getElementById("answersQrZone");
             
             if (qrImgElement) {
                 qrImgElement.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(githubLeaderboardUrl)}`;
                 if (qrZoneElement) qrZoneElement.style.display = "flex";
-                alert(`تم توليد الـ QR بنجاح للجلسة رقم: ${gameSessionSeed}`);
+                alert(`تم توليد QR كود خاص بالاجابات`);
             }
 
-            // فتح لوحة الإجابات في اللابتوب أيضاً للتأكيد
             window.open(githubLeaderboardUrl, "_blank");
         }
+
         let currentImgIndex = 0;
         let visibleTiles = [];
         let isTestMode = false;
@@ -583,6 +593,7 @@
             const sidePanelVisual = document.getElementById('buzzinPanelVisual');
             const displayFrame = document.getElementById('buzzinDisplayFrame');
             const roomCodeInput = document.getElementById('buzzinRoomInput').value.trim();
+            const qrZone = document.getElementById('qrZone');
             
             if (isEnabled) {
                 inputGroup.style.display = "block";
@@ -595,6 +606,7 @@
                 inputGroup.style.display = "none";
                 sidePanelVisual.style.display = "none";
                 displayFrame.src = "about:blank";
+                if (qrZone) qrZone.style.display = "none";
             }
         }
 		
@@ -621,7 +633,7 @@
             currentRound = 1;
             currentImageInRound = 1;
             currentImgIndex = 0;
-            characters.sort(() => Math.random() - 0.5);
+            characters.sort(() => gameSessionSeed);
             teamsData.forEach(team => team.score = 0);
             renderScoreboard();
             updateStatusBar();
@@ -636,19 +648,25 @@
             }
         }
 
+        // ==========================================
+        // منظومة الأزرار الحصرية (تستهدف عناصرها بدقة)
+        // ==========================================
         function setupBuzzinBuzzer(roomCode) {
             const qrZone = document.getElementById('qrZone');
             const qrImg = document.getElementById('qrCodeImg');
             const roomDisplay = document.getElementById('roomCodeDisplay');
             roomCode = roomCode.trim();
             if (!roomCode) {
-                qrZone.style.display = "none";
+                if (qrZone) qrZone.style.display = "none";
                 return;
             }
-            roomDisplay.innerText = roomCode;
+            if (roomDisplay) roomDisplay.innerText = roomCode;
             const playerUrl = `https://www.multibuzz.app/${roomCode}`;
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playerUrl)}`;
-            qrZone.style.display = "flex";
+            
+            if (qrImg) {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(playerUrl)}`;
+            }
+            if (qrZone) qrZone.style.display = "flex";
         }
 
         function changeGridSize(size) {
@@ -828,45 +846,6 @@
                 winnerText += `\n تعادل: ( ${winners.join(" و ")} )`;
             }
             alert(winnerText);
-        }
-
-        // ==========================================
-        // منظومة فتح نافذة الإجابات المنفصلة للقائد
-        // ==========================================
-        // ==========================================
-        // منظومة توليد QR Code وفتح نافذة الإجابات الذكية لـ GitHub
-        // ==========================================
-        function openLeaderPanel() {
-            // 1. استخراج الأسماء بالترتيب الحالي الفعلي المخلوط في الجلسة الحالية
-            const cleanNamesList = characters.map(img => img.split('.')[0].replace(/[_-]/g, ' '));
-            
-            // 2. ضغط وتشفير مصفوفة الأسماء كاملة إلى نص محمي وقصير ليوضع في الرابط بأمان
-            const jsonString = JSON.stringify(cleanNamesList);
-            const compressedData = btoa(encodeURIComponent(jsonString));
-
-            // 3. رابط صفحتكِ الجديدة المرفوعة على GitHub Pages (استبدلي المعطيات برابطك الفعلي بعد الرفع)
-            const githubLeaderboardUrl = `https://shadofh.github.io/answers-list/index.html?session=${gameSessionSeed}`;
-
-            // 4. توليد الـ QR كود وعرضه في واجهة التحكم للـ Buzzin (باستخدام نفس السطر الشغال عندك تماماً)
-            // قمت هنا بربطه بـ qrCodeImg المتواجد في كودك ليظهر بوضوح للقائد
-            const qrImgElement = document.getElementById("qrCodeImg");
-            const qrZoneElement = document.getElementById("qrZone");
-            
-            if (qrImgElement) {
-                // توليد الصورة برابط الـ GitHub المدمج بالأسماء بالملي ثانية
-                qrImgElement.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(githubLeaderboardUrl)}`;
-                
-                // إظهار منطقة الـ QR لو كانت مخفية
-                if (qrZoneElement) qrZoneElement.style.display = "flex";
-                
-                alert("تم تحديث وتوليد الـ QR كود بنجاح! يمكن للقائد الآن مسحه بالجوال لمتابعة التشطيب الذكي بنفس الترتيب العشوائي الحالي.");
-            }
-
-            // 5. فتحها كصفحة عادية ومستقلة على اللابتوب أيضاً برابط الـ GitHub لضمان المرونة
-            const leaderWindow = window.open(githubLeaderboardUrl, "_blank");
-            if (!leaderWindow) {
-                alert("تنبيه: يرجى السماح للمتصفح بفتح النوافذ المنبثقة (Pop-ups) لتتمكن من رؤية جدول الإجابات على اللابتوب.");
-            }
         }
 
         renderScoreboard();
